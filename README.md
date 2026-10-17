@@ -69,7 +69,3 @@ Checks the theater graph (borders symmetric, every sector reachable, every missi
 ## Adding a level
 
 Append an entry to `LEVELS` in [web/js/levels.js](web/js/levels.js) and place its id in a sector's `missions` in [web/js/theater-data.js](web/js/theater-data.js). For a new kind of mission, write a mode in `web/js/modes/` (see its README). The header comment documents every field. Give it a `solution` in strip notation (for example `■ ▲ ● ◆ P(■▲◆) P(■●◆) P(▲●◆)`), then run the verifier. Order templates can use shared variables and literals: `template: '■=XYZ ▲=123\n■ ■ ▲ ■'`.
-
-## The Python prototype
-
-The game began as a Python prototype (Dear PyGui / Tkinter). The web version supersedes it, and the prototype is not part of this repository.
