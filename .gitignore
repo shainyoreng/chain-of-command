@@ -1,0 +1,11 @@
+# Only the web game and its current docs are published.
+# The Python prototype (main.py, chain_of_command/, .venv) and its old notes stay local.
+/*
+!/.gitignore
+!/.github/
+!/web/
+!/README.md
+!/GAME_DESIGN.md
+node_modules/
+.DS_Store
+Thumbs.db

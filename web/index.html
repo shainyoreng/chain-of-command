@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chain of Command</title>
+  <meta name="description" content="A signal-corps puzzle game: get the order through, whatever the line does to it.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Oswald:wght@400;500;600&family=Share+Tech+Mono&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/strip.css">
+  <link rel="stylesheet" href="css/theater.css">
+  <link rel="stylesheet" href="css/routing.css">
+  <link rel="stylesheet" href="css/mode-compress.css">
+  <link rel="stylesheet" href="css/mode-auth.css">
+  <link rel="stylesheet" href="css/tape.css">
+</head>
+<body>
+  <!-- ============================================================ TITLE -->
+  <section id="screen-title" class="screen active" aria-label="Title">
+    <div class="radar" aria-hidden="true"><div class="sweep"></div></div>
+    <div class="title-block">
+      <h1 class="game-title">Chain of<br>Command</h1>
+      <div class="morse" id="title-morse" aria-hidden="true"></div>
+      <div class="title-actions">
+        <button class="btn-stamp" id="btn-start" type="button">Report for duty</button>
+        <div class="title-row">
+          <button class="btn-ghost" id="btn-title-archive" type="button">Field manual archive</button>
+          <button class="btn-ghost" id="btn-title-sandbox" type="button">Proving ground</button>
+        </div>
+        <button class="btn-link" id="btn-reset" type="button">Reset progress</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ MAP -->
+  <section id="screen-map" class="screen" aria-label="Theatre of operations">
+    <header class="topbar">
+      <button class="btn-ghost" id="btn-map-menu" type="button">◂ Menu</button>
+      <div class="topbar-title">Theatre of Operations</div>
+      <div class="rank-badge" id="rank-badge"></div>
+      <div class="topbar-actions">
+        <button class="btn-ghost" id="btn-map-sandbox" type="button">Proving ground</button>
+        <button class="btn-ghost" id="btn-map-archive" type="button">Archive</button>
+        <button class="btn-icon sound-toggle" type="button" aria-label="Toggle sound"></button>
+      </div>
+    </header>
+    <!-- The front: rendered by js/theater.js (CoC.theaterUI) -->
+    <div class="theater" id="theater"></div>
+  </section>
+
+  <!-- ============================================================ MISSION -->
+  <section id="screen-mission" class="screen" aria-label="Operation">
+    <header class="topbar mission-bar">
+      <button class="btn-ghost" id="btn-mission-map" type="button">◂ Map</button>
+      <div class="op-title"><span class="op-id" id="op-id"></span><span class="op-name" id="op-name"></span></div>
+      <div class="objectives" id="objectives"></div>
+      <div class="topbar-actions">
+        <button class="btn-ghost" id="btn-brief" type="button">Briefing</button>
+        <button class="btn-ghost" id="btn-hint" type="button" hidden>Sealed hints</button>
+        <button class="btn-icon sound-toggle" type="button" aria-label="Toggle sound"></button>
+      </div>
+    </header>
+
+    <div class="line-panel panel">
+      <div class="line-head">
+        <div class="order-strip">
+          <span class="strip-label">Orders look like</span>
+          <div class="template" id="mission-template"></div>
+        </div>
+        <div class="anim-controls" id="anim-controls" aria-label="Playback speed">
+          <button type="button" class="btn-chip" data-speed="1">1×</button>
+          <button type="button" class="btn-chip" data-speed="2">2×</button>
+          <button type="button" class="btn-chip" data-speed="4">4×</button>
+          <button type="button" class="btn-chip" id="btn-skip">Skip ▸▸</button>
+        </div>
+      </div>
+      <div class="line" id="line"></div>
+      <div class="tape-row">
+        <div class="tape-label" id="tape-label">Standing by</div>
+        <div class="tape" id="tape"></div>
+        <div class="tape-note" id="tape-note"></div>
+      </div>
+      <div class="stamp-zone" id="stamp-zone"></div>
+    </div>
+
+    <div class="workbench">
+      <!-- Special missions (js/modes/*) render here instead of the two protocol panels -->
+      <section class="mode-root panel" id="mode-root" aria-label="Special mission"></section>
+      <section class="protocol panel" id="proto-enc">
+        <header class="protocol-head">
+          <div class="protocol-title"><h2>HQ protocol</h2><span class="protocol-sub">What gets sent</span></div>
+          <button class="btn-chip reset-btn" type="button" data-reset="enc" title="Back to sending the order as written" hidden>↺ Reset</button>
+        </header>
+        <div class="cap cap-top" id="enc-cap-top"></div>
+        <div class="strip-tray" id="enc-tray" aria-label="Supply tray"></div>
+        <div class="strip-board" id="enc-strip" aria-label="Transmission strip"></div>
+        <div class="cap cap-bottom" id="enc-cap-bottom"></div>
+      </section>
+
+      <section class="protocol panel" id="proto-dec">
+        <header class="protocol-head">
+          <div class="protocol-title"><h2>Field protocol</h2><span class="protocol-sub">How the front reads it</span></div>
+          <button class="btn-chip reset-btn" type="button" data-reset="dec" title="Clear field work and read every symbol from its usual place" hidden>↺ Reset</button>
+        </header>
+        <div class="field-work" id="field-work">
+          <div class="stage-label">1 · Clean the signal <small>plates run top to bottom</small></div>
+          <div class="supply" aria-label="Supply crate"></div>
+          <div class="program">
+            <div class="slot slot-root" data-slot="root"></div>
+          </div>
+        </div>
+        <div class="stage-label" id="asm-label"><span class="stage-n">2 · </span>Assemble the order <small>where each symbol is read from</small></div>
+        <div class="assembly" id="dec-asm"></div>
+      </section>
+
+      <aside class="console panel" aria-label="Signals console">
+        <div class="console-actions">
+          <button class="big-btn btn-test" id="btn-test" type="button"><span>▶</span> Test transmission <small>watch one order travel</small></button>
+          <button class="big-btn btn-exercise" id="btn-exercise" type="button"><span>⚑</span> Field exercise <small>× 300 orders</small></button>
+        </div>
+        <div class="console-body">
+          <div class="console-idle" id="console-idle">Run a field exercise: HQ sends 300 orders and the results print here.</div>
+          <div class="results" id="results" hidden>
+            <div class="gauges">
+              <div class="gauge" id="gauge-acc"></div>
+              <div class="gauge" id="gauge-bw"></div>
+            </div>
+            <div class="exercise-summary" id="exercise-summary"></div>
+            <div class="log" id="log" aria-live="polite"></div>
+          </div>
+          <div class="analyzer" id="analyzer"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <div class="coach" id="coach" hidden>
+    <div class="coach-hole" id="coach-hole"></div>
+    <div class="coach-note" id="coach-note" role="dialog" aria-live="polite"></div>
+  </div>
+
+  <!-- ============================================================ ARCHIVE -->
+  <section id="screen-archive" class="screen" aria-label="Field manual archive">
+    <header class="topbar">
+      <button class="btn-ghost" id="btn-archive-back" type="button">◂ Back</button>
+      <div class="topbar-title">Field Manual — Rediscovered Doctrine</div>
+      <div class="topbar-actions"><button class="btn-icon sound-toggle" type="button" aria-label="Toggle sound"></button></div>
+    </header>
+    <div class="archive" id="archive"></div>
+  </section>
+
+  <!-- ============================================================ PROVING GROUND -->
+  <section id="screen-sandbox" class="screen" aria-label="Proving ground">
+    <header class="topbar">
+      <button class="btn-ghost" id="btn-sandbox-back" type="button">◂ Back</button>
+      <div class="topbar-title">Proving Ground — design your own line</div>
+      <div class="topbar-actions"><button class="btn-icon sound-toggle" type="button" aria-label="Toggle sound"></button></div>
+    </header>
+    <div class="sandbox">
+      <div class="panel sandbox-form">
+        <label class="field-label" for="sb-template">Order template</label>
+        <textarea id="sb-template" rows="2" spellcheck="false"></textarea>
+        <p class="field-help">Line 1 defines variables (<code>■=XYZ ▲=123 ●=A-Z</code>), line 2 is the pattern. Repeated shapes must hold the same symbol; anything undefined is a literal.</p>
+        <div class="template" id="sb-preview"></div>
+
+        <label class="field-label" for="sb-chain">The line (one relay per line)</label>
+        <textarea id="sb-chain" rows="5" spellcheck="false"></textarea>
+        <p class="field-help">Kinds: <code>pass drop add swap garble flip smudge burst pad clerk shuffle</code>. Options: <code>p=0.8 set=123 to=ABC len=3 max=2 size=3</code>.</p>
+
+        <div class="sb-row">
+          <label><input type="checkbox" id="sb-arq"> Field may SAY AGAIN</label>
+          <label>Budget <input type="number" id="sb-budget" min="0" step="0.5" value="3"></label>
+        </div>
+        <div class="sb-error" id="sb-error"></div>
+        <button class="big-btn btn-test" id="sb-go" type="button">Deploy to the line ▸</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="modal" class="modal" hidden><div class="modal-card" id="modal-card" role="dialog" aria-modal="true"></div></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="js/engine.js"></script>
+  <script src="js/blocks.js"></script>
+  <script src="js/levels.js"></script>
+  <script src="js/levels-early-pass.js"></script>
+  <script src="js/levels-marsh-capital.js"></script>
+  <script src="js/levels-depot.js"></script>
+  <script src="js/levels-forest-rail.js"></script>
+  <script src="js/levels-harbour-citadel.js"></script>
+  <script src="js/levels-bureau-linear.js"></script>
+  <script src="js/levels-bureau-cyclic.js"></script>
+  <script src="js/modes/compress.js"></script>
+  <script src="js/modes/auth.js"></script>
+  <script src="js/theater-data.js"></script>
+  <script src="js/art.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/strip.js"></script>
+  <script src="js/tape.js"></script>
+  <script src="js/routing.js"></script>
+  <script src="js/theater.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

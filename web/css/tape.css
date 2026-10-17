@@ -1,0 +1,207 @@
+/* The live message tape (js/tape.js): persistent slips that act out what each relay did. */
+.tape { position: relative; }
+.tape .tile {
+  position: relative;
+  perspective: 160px;
+  transition: none; /* tiles move by FLIP animations; a CSS transition would fight the measurements */
+  will-change: transform;
+}
+.tape .tile b { display: block; backface-visibility: hidden; transform-origin: 50% 50%; }
+
+/* split-flap hairline while a letter flaps over */
+.tape .tile.fx-flap::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - .5px);
+  height: 1px;
+  background: rgba(0, 0, 0, .45);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .35);
+  pointer-events: none;
+}
+
+/* a slip about to be acted on (dropped, swapped) */
+.tape .tile.fx-doomed { outline: 2px dashed var(--bad); outline-offset: 1px; }
+
+/* reduced motion: the state changes at once and the touched slips glow for a moment */
+.tape .tile.fx-mark { outline: 2px solid var(--amber); outline-offset: 2px; box-shadow: 0 0 10px rgba(255, 190, 70, .8); }
+
+/* a slip falling off the tape (out of the flow, so the gap closes under it) */
+.tape .tile.leaving { position: absolute; margin: 0; z-index: 5; pointer-events: none; }
+
+/* foreign traffic wrapped round the transmission */
+.tape .tile.foreign {
+  background:
+    repeating-linear-gradient(135deg, rgba(40, 62, 92, .16) 0 4px, transparent 4px 8px),
+    linear-gradient(180deg, #dfe3e8, #b7c0cb);
+  border-color: #46566b;
+  border-style: dashed;
+}
+.tape .tile.foreign b { color: #24364d; }
+.tape .tile.lamp.foreign { border-style: dashed; border-color: #7f93ab; }
+
+/* an ink blot spreading over a slip */
+.tape .tile .blot {
+  position: absolute;
+  inset: -18%;
+  border-radius: 46% 54% 50% 48%;
+  background:
+    radial-gradient(circle at 70% 25%, #14120c 0 9%, transparent 11%),
+    radial-gradient(circle at 22% 78%, #14120c 0 7%, transparent 9%),
+    radial-gradient(ellipse 55% 50% at 48% 52%, #14120c 0 58%, rgba(20, 18, 12, .6) 70%, transparent 80%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Courier Corps: a parcel (satchel) of slips that travels as one object */
+.tape .parcel {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin: 7px 4px 1px;
+  padding: 2px 2px;
+  border: 2px solid #9a7438;
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(214, 170, 96, .38), rgba(126, 88, 36, .45));
+  box-shadow: 0 3px 6px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(255, 230, 170, .18);
+  transition-property: border-color, background-color, box-shadow;
+  transition-timing-function: ease;
+  will-change: transform;
+}
+.tape .parcel .tile { margin: 2px 1px; }
+.tape .parcel::before {
+  content: attr(data-n);
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 14px;
+  padding: 0 4px;
+  font-family: var(--f-stencil);
+  font-size: 10px;
+  line-height: 13px;
+  text-align: center;
+  color: #2a1c06;
+  background: #d8b46a;
+  border: 1px solid #6e5020;
+  border-radius: 2px;
+  z-index: 2;
+  transition: opacity .2s;
+}
+.tape .parcel.packing { border-color: transparent; background: transparent; box-shadow: none; }
+.tape .parcel.packing::before { opacity: 0; }
+
+/* "passed it on" nod from a relay that did nothing */
+.tape .tape-tick {
+  position: absolute;
+  right: 8px;
+  top: -9px;
+  padding: 0 6px;
+  font-family: var(--f-stencil);
+  font-size: 10.5px;
+  line-height: 15px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #0f120b;
+  background: var(--ok);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* ------------------------------------------------------------------ the stage row above the slips */
+.tape .tape-stage {
+  flex: 0 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  min-width: 0;
+  margin: 0 0 4px;
+  padding: 2px 2px 6px;
+  border-bottom: 1px dashed rgba(216, 201, 155, .25);
+}
+.tape .stage-cap {
+  font-family: var(--f-stencil);
+  font-size: 10.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--khaki-dim);
+}
+.tape .stage-row { display: inline-flex; flex-wrap: wrap; align-items: center; min-width: 0; }
+.tape .stage-calc {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  min-width: 0;
+  font-family: var(--f-mono);
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--lamp);
+  overflow-wrap: anywhere;
+}
+.tape .stage-calc:empty { display: none; }
+.tape .stage-calc > b, .tape .stage-calc .tally b { color: #fff3c4; font-weight: normal; text-shadow: 0 0 8px rgba(255, 210, 87, .6); }
+.tape .stage-calc > b.yes { color: var(--ok); text-shadow: none; }
+.tape .stage-calc > b.no { color: var(--bad); text-shadow: none; }
+.tape .stage-calc .ballot { display: inline-flex; align-items: center; min-width: 8px; }
+
+/* order-form slots the assembler fills */
+.tape .tile.slot { background: rgba(0, 0, 0, .25); border: 2px dashed var(--c, var(--khaki-dim)); box-shadow: none; }
+.tape .tile.slot b::before { content: attr(data-sym); color: var(--c, var(--khaki-dim)); opacity: .9; }
+.tape .tile.slot-lit { opacity: .92; }
+.tape .c-blue { --c: #5d97df; }
+.tape .c-orange { --c: #ec8a40; }
+.tape .c-green { --c: #5fb35f; }
+.tape .c-purple { --c: #a47ad8; }
+.tape .c-red { --c: #e2594d; }
+.tape .c-teal { --c: #3db3ab; }
+.tape .c-pink { --c: #e06fae; }
+.tape .c-sand { --c: #c9a45e; }
+
+/* slips a plate / reader / item is looking at */
+.tape .tile.fx-test { outline: 2px solid var(--lamp); outline-offset: 1px; box-shadow: 0 0 12px rgba(255, 210, 87, .75); }
+.tape .tile.fx-grp-a { outline: 2px solid #5d97df; outline-offset: 1px; }
+.tape .tile.fx-grp-b { outline: 2px solid #ec8a40; outline-offset: 1px; }
+.tape .tile.fx-win { outline: 2px solid var(--ok); outline-offset: 1px; box-shadow: 0 0 12px rgba(143, 191, 85, .8); }
+.tape .tile.fx-lose { opacity: .45; filter: grayscale(.6); }
+.tape .tile.vote { margin: 1px; }
+/* a reassembly tag (the first slip of each parcel) */
+.tape .tile.fx-tag { background: linear-gradient(180deg, #e9c877, #c99a3e); border-color: #6e5020; border-radius: 3px 10px 10px 3px; }
+.tape .tile.fx-tag b { color: #3a2808; }
+.tape .parcel.tagged::before { display: none; }
+/* a copy in flight */
+.tape .tile.ghost { z-index: 7; box-shadow: 0 8px 14px rgba(0, 0, 0, .55); }
+
+/* verdict chips */
+.tape .tape-tick.yes { background: var(--ok); }
+.tape .tape-tick.no { background: var(--bad); color: #fff; }
+.tape .tape-tick.quiet { background: var(--khaki-dim); }
+
+@media (max-width: 640px) {
+  .tape .parcel { margin: 7px 3px 1px; padding: 1px; }
+  .tape .parcel .tile { margin: 1.5px 1px; }
+}
+
+/* check / seal effects: a weight tag on each digit the check reads; seal digits underlined in the row sums */
+.tape .tile[data-w]::before {
+  /* inside the slip (tiles clip their overflow) */
+  content: attr(data-w);
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  z-index: 3;
+  padding: 1px 2px;
+  border-radius: 2px;
+  background: var(--lamp);
+  color: #2a1d00;
+  font: 9px/1 var(--f-mono);
+  pointer-events: none;
+}
+.tape .stage-calc small { font-size: 12px; color: var(--khaki-dim); }
+.tape .stage-calc u { text-decoration: none; padding: 0 2px; border-radius: 2px; background: rgba(181, 69, 47, .55); color: #fff3c4; }
