@@ -338,7 +338,7 @@
 .th-panel .th-p-back:hover { background: var(--ink); color: var(--paper); }
 .th-p-back small { margin-left: 6px; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .05em; opacity: .6; text-transform: none; }
 
-/* ------------------------------------------------------------------ the dock: overview strip + standing orders (fixed while the map scrolls) */
+/* ------------------------------------------------------------------ the dock: overview strip + the map key (fixed while the map scrolls) */
 .th-dock {
   position: absolute;
   left: 12px;
@@ -386,10 +386,7 @@
   transform: rotate(-.4deg);
   transition: opacity .35s ease;
 }
-.th-orders { display: flex; align-items: baseline; gap: 10px; }
-.th-orders span { flex: none; font-family: var(--f-ui); font-weight: 600; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #8e2b16; }
-.th-orders p { margin: 0; font-size: 13px; line-height: 1.35; }
-.th-orders b { font-family: var(--f-ui); font-weight: 600; letter-spacing: .04em; }
+.th-orders { display: flex; align-items: center; gap: 10px; }
 .th-keybtn {
   flex: none;
   margin-left: auto;
@@ -407,7 +404,7 @@
 .th-keybtn:hover, .th-keybtn[aria-expanded='true'] { color: var(--paper); background: var(--ink); }
 .th-key {
   position: absolute;
-  right: 0;
+  left: 0; /* the tab sits at the dock's left edge: open upward and to the right */
   bottom: calc(100% + 8px);
   display: grid;
   grid-template-columns: auto auto;
@@ -460,8 +457,6 @@
   .th-mini { order: 0; width: 100%; height: auto; aspect-ratio: 4.4; }
   .th-legend { max-width: none; transform: none; }
   .is-zoomed .th-legend { display: none; }
-  .th-orders { flex-wrap: wrap; }
-  .th-orders p { font-size: 14px; }
   .th-key { position: static; margin-top: 8px; grid-template-columns: 1fr 1fr; box-shadow: none; padding: 6px 0 0; border-top: 1px dashed rgba(60, 45, 25, .4); }
   .th-intel { display: none; }
   .theater.is-zoomed .th-stage { height: min(58vh, 500px); }

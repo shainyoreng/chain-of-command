@@ -2211,22 +2211,11 @@
   // ================================================================ render
   const keyIcon = (k, cls) =>
     `<svg class="sw-ico" viewBox="-20 -14 40 28" aria-hidden="true"><g class="th-u ${cls}"><use href="#th-s-${k}"/></g></svg>`;
+  // the corner tab: the map key (and, once the war is won, the victory replay)
   function legendHTML(st) {
-    const open = TH().SECTORS.filter((s) => st.sectors[s.id] === 'open');
-    const gated = TH().SECTORS.filter((s) => st.sectors[s.id] === 'gated');
-    const short = TH().SECTORS.filter((s) => st.sectors[s.id] === 'short');
     const all = TH().SECTORS.every((s) => st.sectors[s.id] === 'captured');
-    const names = (arr) => arr.map((s) => `<b>${esc(s.name)}</b>`).join(arr.length > 2 ? ', ' : ' or ').replace(/, (?=[^,]*$)/, ' or ');
-    let orders;
-    if (all) orders = 'The front is ours. Every sector captured.';
-    else if (open.length) orders = `Attack ${names(open)}.`;
-    else if (gated.length) orders = `Restore contact with ${names(gated)}.`;
-    else if (short.length) orders = `Earn more stars to push on: ★ ${st.stars} / ${Math.min(...short.map((x) => st.need[x.id]))}.`;
-    else orders = 'Hold the line.';
-    if (open.length && gated.length) orders += ` Contact lost with ${names(gated)}.`;
-    if ((open.length || gated.length) && short.length) orders += ` ${names(short)} ${short.length > 1 ? 'need' : 'needs'} more stars.`;
     return (
-      `<div class="th-orders"><span>Standing orders</span><p>${orders}</p>` +
+      '<div class="th-orders">' +
       (all ? `<button type="button" class="th-victory-btn" data-act="victory" title="Watch the victory again">${CoC.art.medal(2, true)}Victory</button>` : '') +
       '<button type="button" class="th-keybtn" data-act="key" aria-expanded="false">Key</button></div>' +
       '<div class="th-key" hidden><span class="k"><i class="sw sw-friend"></i>Held by us</span><span class="k"><i class="sw sw-open"></i>Open to attack</span>' +
