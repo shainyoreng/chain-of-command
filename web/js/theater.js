@@ -1057,6 +1057,17 @@
       return units;
     }
     const rnd = rng(77);
+    // footprint radius of each model on the overview map: a model is only placed where it fits
+    const RAD = { ship: 40, lc: 17, tank: 13, jeep: 11, truck: 13, arty: 13, team: 17 };
+    const free = (p, k) => units.every((q) => dist(p, q.p) >= (RAD[k] || 12) + (RAD[q.team ? 'team' : q.k] || 12));
+    const place = (k, p, r) => {
+      if (!free(p, k)) return;
+      if (k === 'team') {
+        const n0 = units.length;
+        pushTeam(units, p, r);
+        for (let i = n0; i < units.length; i++) units[i].team = true;
+      } else units.push({ k, p, r });
+    };
     const total = front.reduce((a, f) => a + f.L, 0);
     const spacing = Math.max(72, total / 22);
     const where = (p) => {
@@ -1073,19 +1084,19 @@
         const rot = deg(nn);
         const p1 = add(add(m.p, nn, -36), m.t, (rnd() - 0.5) * 16);
         const w1 = where(p1);
-        if (w1 === 'sea') units.push({ k: 'lc', p: p1, r: rot });
-        else if (w1 && i % 2) pushTeam(units, p1, rot + (rnd() - 0.5) * 14);
-        else if (w1) units.push({ k: i % 4 === 2 ? 'jeep' : 'tank', p: p1, r: rot + (rnd() - 0.5) * 14 });
+        if (w1 === 'sea') place('lc', p1, rot);
+        else if (w1 && i % 2) place('team', p1, rot + (rnd() - 0.5) * 14);
+        else if (w1) place(i % 4 === 2 ? 'jeep' : 'tank', p1, rot + (rnd() - 0.5) * 14);
         if (j % 2 === 0) {
           const p2 = add(add(m.p, nn, -88), m.t, 16);
           const w2 = where(p2);
-          if (w2 === 'sea') units.push({ k: 'ship', p: p2, r: rot });
-          else if (w2) units.push({ k: (i >> 1) % 2 ? 'truck' : 'arty', p: p2, r: rot + (rnd() - 0.5) * 20 });
+          if (w2 === 'sea') place('ship', p2, rot);
+          else if (w2) place((i >> 1) % 2 ? 'truck' : 'arty', p2, rot + (rnd() - 0.5) * 20);
         }
         i++;
       }
     }
-    return units;
+    return units.map(({ team, ...u }) => u);
   }
 
   function friendlyCentre(states, front) {
@@ -1590,6 +1601,15 @@
       return { p: ring(ang, d), r: base + ang * 0.35 };
     });
   }
+  // Afloat, a model rides a landing craft: every vehicle has its own, and each infantry section of three shares
+  // one ('lead' shows the boat, 'ride' is aboard and hidden). On the beach the boat becomes the real model.
+  const FLOATS = new Set(['amtrac', 'lc', 'ship']); // these swim as they are
+  function boatRoles(slots) {
+    let f = 0;
+    return slots.map((sl) => (FLOATS.has(sl.k) ? '' : sl.role !== 'foot' ? 'own' : f++ % 3 === 0 ? 'lead' : 'ride'));
+  }
+  const atSea = (p) => regionAt(p) === 'sea';
+
   // Where every model of sector `id` stands after `k` objectives (k = -1: behind the start line).
   // Every pose is kept on our own ground (or the sector being taken): never inside enemy territory.
   function unitPoses(id, pg, k) {
@@ -1599,6 +1619,17 @@
       const sp = unitSpot(pg, -1);
       poses = slots.map((sl) => slotPose(sl, sp, pg.u));
       safe = sp.p;
+      if (atSea(sp.p)) {
+        // an assault from the sea: the boats wait line abreast behind the start line, riders aboard their section's boat
+        const roles = boatRoles(slots);
+        const boats = roles.map((r, i) => (r === 'ride' ? -1 : i)).filter((i) => i >= 0);
+        const lineUp = new Map(boats.map((i, j) => [i, { p: add(add(sp.p, sp.t, -8 * pg.u), perp(sp.t), (j - (boats.length - 1) / 2) * 34 * pg.u), r: deg(sp.t) }]));
+        let lead = -1;
+        poses = roles.map((r, i) => {
+          if (r !== 'ride') lead = r === 'lead' ? i : lead;
+          return lineUp.get(r === 'ride' ? lead : i);
+        });
+      }
     } else {
       const l = pg.lines[k];
       const t = at(l.pts, l.cum, l.cum[l.cum.length - 1]).t;
@@ -1610,10 +1641,17 @@
     return poses;
   }
   const poseT = (q, sc) => `translate(${r1(q.p[0])} ${r1(q.p[1])}) rotate(${r1(q.r)}) scale(${Math.round(sc * 1000) / 1000})`;
+  const BOAT_SC = 0.95;
   function zoomUnitsSvg(id, pg, k) {
     const poses = unitPoses(id, pg, k);
-    return formation(id)
-      .map((sl, i) => `<g class="th-u fr th-zu" data-u="${i}" transform="${poseT(poses[i], sl.sc * pg.u)}"><use href="#th-s-${sl.k}"/></g>`)
+    const slots = formation(id);
+    const roles = boatRoles(slots);
+    return slots
+      .map((sl, i) => {
+        const sea = !!roles[i] && atSea(poses[i].p);
+        const look = sea ? ` style="${roles[i] === 'ride' ? 'opacity:0' : ''}"` : '';
+        return `<g class="th-u fr th-zu" data-u="${i}" data-k="${sl.k}" data-boat="${roles[i]}"${sea ? ' data-sea="1"' : ''}${look} transform="${poseT(poses[i], (sea ? BOAT_SC : sl.sc) * pg.u)}"><use href="#th-s-${sea ? 'lc' : sl.k}"/></g>`;
+      })
       .join('');
   }
 
@@ -2651,7 +2689,7 @@
     return {
       el, kind, path, K: KINDS[kind] || KINDS.tank, k: o.k, sc: o.sc, delay: o.delay || 0, speed: o.speed || 1,
       h: o.h0, h1: o.h1, s: 0, v: 0, wait: 0, stops: path.stops.slice(), boundEnd: 0, prone: false,
-      trails: o.trails, trailAcc: 0, rnd: o.rnd || Math.random, done: false,
+      trails: o.trails, trailAcc: 0, rnd: o.rnd || Math.random, done: false, sea: el.dataset.sea === '1',
     };
   }
 
@@ -2704,7 +2742,17 @@
   }
 
   function drawMover(m, p) {
-    const sc = m.prone ? m.sc * 0.84 : m.sc;
+    if (m.el.dataset.boat) {
+      const sea = atSea(p);
+      if (sea !== !!m.sea) {
+        m.sea = sea;
+        m.el.firstElementChild.setAttribute('href', `#th-s-${sea ? 'lc' : m.el.dataset.k}`);
+        m.el.style.opacity = sea && m.el.dataset.boat === 'ride' ? 0 : '';
+        if (sea) m.el.dataset.sea = '1';
+        else delete m.el.dataset.sea;
+      }
+    }
+    const sc = m.sea ? BOAT_SC * m.k : m.prone ? m.sc * 0.84 : m.sc;
     m.el.setAttribute('transform', `translate(${P(p)}) rotate(${r1(m.h)}) scale(${Math.round(sc * 1000) / 1000})`);
   }
 
@@ -2727,7 +2775,9 @@
   function tickMover(m, dt, t) {
     if (m.done || t < m.delay) return;
     if (m.plane) return tickPlane(m, dt);
-    const { K, k, path } = m;
+    const { k, path } = m;
+    // afloat, everyone moves like a landing craft
+    const K = m.sea ? KINDS.lc : m.K;
     const L = path.L;
     if (m.wait > 0) {
       m.wait -= dt;
